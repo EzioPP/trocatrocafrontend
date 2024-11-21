@@ -20,7 +20,7 @@ export default function CardView({ card, sendShowComponent }: CardViewProps) {
     };
 
     const handleDeleteCard = () => {
-        fetch(`http://localhost:5015/api/card/id/${card?._cardId}`, {
+        fetch(`http://localhost:5015/api/card/client/${card?._cardId}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',

@@ -24,5 +24,14 @@ export default {
       },
     },
   },
-  plugins: [require('@tailwindcss/forms')],
+  variants: {
+    extend: {
+      scrollbar: ['rounded'],
+      backgroundColor: ["active"],
+      textColor: ["active"],
+      borderColor: ["active"],
+    },
+  },
+
+  plugins: [require('@tailwindcss/forms'), require('tailwind-scrollbar')],
 } satisfies Config;

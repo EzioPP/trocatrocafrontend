@@ -6,15 +6,11 @@ import CurrencyInput from "@/global-components/CurrencyInput";
 type CardViewProps = {
     sendShowComponent: (showComponent: string) => void;
 };
-const Modal = ({ result, closeModal }: { result: number | null, closeModal: () => void }) => (
+const Modal = ({ result, closeModal }: { result: string | null, closeModal: () => void }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div className="bg-dark p-6 rounded-md shadow-md max-w-sm w-full">
             <p className="mt-4 text-center">
-                {result === 200 && "Cartão cadastrado com sucesso."}
-                {result === 500 && "Houve um erro no servidor."}
-                {result === 401 && "Você não tem permissão para realizar esta ação."}
-                {result === 409 && "Cartão já cadastrado."}
-                {result === null && "Erro desconhecido."}
+                {result}
             </p>
             <div className="mt-6 text-center">
                 <button
@@ -34,7 +30,7 @@ export default function CardView({ sendShowComponent }: CardViewProps) {
     const [isDebit, setIsDebit] = useState(false);
     const [isCredit, setIsCredit] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [result, setResult] = useState<number | null>(null);
+    const [result, setResult] = useState<string | null>(null);
 
     const formatCardNumber = (e: React.FormEvent<HTMLInputElement>) => {
         const input = e.currentTarget;
@@ -48,6 +44,22 @@ export default function CardView({ sendShowComponent }: CardViewProps) {
         sendShowComponent(showComponent);
     };
 
+
+    const handleReponseToString = (response: Response) => {
+        if (response.status === 200) {
+            return "Cartão cadastrado com sucesso.";
+        }
+        if (response.status === 500) {
+            return "Houve um erro no servidor.";
+        }
+        if (response.status === 401) {
+            return "Você não tem permissão para realizar esta ação.";
+        }
+        if (response.status === 409) {
+            return "Cartão já cadastrado.";
+        }
+        return "Erro desconhecido.";
+    }
 
     const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const { value, checked } = event.target;
@@ -85,8 +97,13 @@ export default function CardView({ sendShowComponent }: CardViewProps) {
             const cvv = formData.get('cvv');
             const expirationDate = formData.get('expirationDate');
 
-            console.log(expirationDate);
-            console.log("aeiou");
+            if (expirationDate && expirationDate < new Date().toISOString().split('T')[0]) {
+                setShowModal(true);
+                setResult("Data inválida");
+                return;
+            }
+
+
             let cardType = '';
             if (isDebit) {
                 cardType += 'debito ';
@@ -116,10 +133,7 @@ export default function CardView({ sendShowComponent }: CardViewProps) {
             console.log(response);
 
             setShowModal(true);
-            setResult(response.status);
-            setShowComponent("none");
-            sendShowComponent("none");
-            location.reload();
+            setResult(handleReponseToString(response));
         } catch (error) {
 
             console.error(error);

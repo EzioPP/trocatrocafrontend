@@ -24,6 +24,13 @@ type CardProps = {
     _limit: number;
 };
 
+type PixProps = {
+    _pixId: number;
+    _keyType: string;
+    _clientId: number;
+};
+
+
 type ClientProps = {
     _clientId: number;
     _cpf: string;
@@ -35,6 +42,5 @@ type ClientProps = {
 };
 
 
-
 export { roboto, playfair };
-export type { TransactionProps, CardProps, ClientProps };
+export type { TransactionProps, PixProps, CardProps, ClientProps };
