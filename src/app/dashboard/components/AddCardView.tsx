@@ -143,6 +143,13 @@ export default function CardView({ sendShowComponent }: CardViewProps) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <form onSubmit={handleSubmit} className="bg-dark p-4 rounded-lg">
+                <button
+                    className="bg-rose-800 hover:bg-rose-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    type="button"
+                    onClick={handleShowComponent}
+                >
+                    X
+                </button>
                 <div className="flex flex-col mb-4">
                     <label className="text-sm text-light">Número do Cartão</label>
                     <input
@@ -231,13 +238,7 @@ export default function CardView({ sendShowComponent }: CardViewProps) {
                     >
                         Cadastrar
                     </button>
-                    <button
-                        className="bg-rose-800 hover:bg-rose-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        type="button"
-                        onClick={handleShowComponent}
-                    >
-                        Cancelar
-                    </button>
+
                 </div>
             </form>
             {showModal && <Modal result={result} closeModal={() => setShowModal(false)} />}

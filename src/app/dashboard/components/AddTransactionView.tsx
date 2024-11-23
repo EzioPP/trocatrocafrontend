@@ -1,20 +1,17 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { TransactionProps } from "../local-constants";
+import { CardProps, TransactionProps } from "../local-constants";
 import CurrencyInput from "@/global-components/CurrencyInput";
 type TrasactionViewProps = {
     sendShowComponent: (showComponent: string) => void;
 };
-const Modal = ({ result, closeModal }: { result: number | null, closeModal: () => void }) => (
+
+const Modal = ({ result, closeModal }: { result: string | null, closeModal: () => void }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div className="bg-dark p-6 rounded-md shadow-md max-w-sm w-full">
             <p className="mt-4 text-center">
-                {result === 200 && "Cartão cadastrado com sucesso."}
-                {result === 500 && "Houve um erro no servidor."}
-                {result === 401 && "Você não tem permissão para realizar esta ação."}
-                {result === 409 && "Cartão já cadastrado."}
-                {result === null && "Erro desconhecido."}
+                {result}
             </p>
             <div className="mt-6 text-center">
                 <button
@@ -27,31 +24,66 @@ const Modal = ({ result, closeModal }: { result: number | null, closeModal: () =
         </div>
     </div>
 );
-
-
-export default function CardView({ sendShowComponent }: TrasactionViewProps) {
+export default function AddtTransactionView({ sendShowComponent }: TrasactionViewProps) {
     const [showComponent, setShowComponent] = useState<string>("none");
     const [showModal, setShowModal] = useState(false);
+    const [method, setMethod] = useState<string>("none");
+    const [paymentMethod, setPaymentMethod] = useState<string>("none");
     const [result, setResult] = useState<number | null>(null);
+    const [transaction, setTransaction] = useState<TransactionProps | null>(null);
+    const [creditCards, setCreditCards] = useState<CardProps[]>([]);
+    const [debitCards, setDebitCards] = useState<CardProps[]>([]);
+    const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
 
-    const formatCardNumber = (e: React.FormEvent<HTMLInputElement>) => {
-        const input = e.currentTarget;
-        let value = input.value.replace(/\D/g, '');
-        value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-        input.value = value.trim();
-    };
+    useEffect(() => {
+        async function fetchCards() {
+            try {
+                const creditCards = await getCreditCards();
+                setCreditCards(creditCards);
+                const debitCards = await getDebitCards();
+                setDebitCards(debitCards);
+                console.log(creditCards);
+                console.log(debitCards);
 
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        fetchCards();
+    }, []);
     const handleShowComponent = () => {
         setShowComponent("none");
         sendShowComponent(showComponent);
     };
 
 
-
+    const changeSelectedCard = (card: CardProps) => {
+        setSelectedCard(card);
+    }
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         try {
             const formData = new FormData(event.currentTarget);
+            const value = formData.get('type') as string;
+            if (value === "1") {
+                const response = await fetch('http://localhost:5015/api/transaction/client', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        value: formData.get('value'),
+                        paymentMethod: paymentMethod,
+                        cardId: selectedCard?._cardId,
+                        cvv: formData.get('cvv'),
+                    }),
+                });
+                if (response.ok) {
+                    setResult(200);
+                } else {
+                    setResult(500);
+                }
+            }
 
         } catch (error) {
 
@@ -59,90 +91,174 @@ export default function CardView({ sendShowComponent }: TrasactionViewProps) {
         }
     };
 
+    const handleTypeChangeMethod = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const type = event.target.value;
+        if (type === "1") {
+            setMethod("Pagar");
+
+        }
+        if (type === "2") {
+            setMethod("Receber");
+            setPaymentMethod("Deposito");
+        }
+    }
+
+    const handleTypeChangePaymentMethod = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const type = event.target.value;
+        if (type === "1") {
+            setPaymentMethod("Pix");
+        }
+        if (type === "2") {
+            setPaymentMethod("Cartão de Crédito");
+
+        }
+        if (type === "3") {
+            setPaymentMethod("Cartão de Débito");
+        }
+        if (type === "4") {
+            setPaymentMethod("Deposito");
+        }
+    }
+    async function getCreditCards(): Promise<CardProps[]> {
+        const response = await fetch('http://localhost:5015/api/card/client/credito', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+        });
+        console.log(response);
+        if (response.ok) {
+            const cards = await response.json();
+            return cards;
+        } else {
+            throw new Error('Failed to fetch cards');
+        }
+    }
+
+    async function getDebitCards(): Promise<CardProps[]> {
+        const response = await fetch('http://localhost:5015/api/card/client/debito', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+        });
+        console.log(response);
+        if (response.ok) {
+            const cards = await response.json();
+            return cards;
+        } else {
+            throw new Error('Failed to fetch cards');
+        }
+    }
+
+
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <form onSubmit={handleSubmit} className="bg-dark p-4 rounded-lg">
-                <div className="flex flex-col mb-4">
-                    <label className="text-sm text-light">Número do Cartão</label>
-                    <input
-                        type="text"
-                        name="cardNumber"
-                        className="p-2 rounded-md bg-semiDark text-light"
-                        placeholder="1234 5678 9012 3456"
-                        maxLength={19}
-                        pattern="\d{4}\s\d{4}\s\d{4}\s\d{4}"
-                        onInput={(e) => formatCardNumber(e)}
-                        required
-                    />
-                </div>
-                <div className="flex flex-col mb-4">
-                    <input
-                        type="text"
-                        name="cvv"
-                        className="p-2 rounded-md bg-semiDark text-light"
-                        maxLength={3}
-                        pattern="\d{3}"
-                        placeholder="123"
-                        onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '')}
-                        required
-                    />
+
+                <div className="dropdown flex justify-between">
+                    <label htmlFor="type">Tipo</label>
+                    <select name="type" id="type" className="bg-dark text-white rounded-md p-2" onChange={handleTypeChangeMethod}>
+                        <option value="1">Pagar </option>
+                        <option value="2">Receber</option>
+                    </select>
                 </div>
 
-                <div className="flex flex-col mb-4">
-                    <input
-
-                        type="month"
-
-                        name="expirationDate"
-
-                        className="p-2 rounded-md bg-semiDark text-light"
-
-                        onChange={handleDateChange}
-
-                        required
-
-                    />
+                <div className="dropdown flex justify-between">
+                    <label htmlFor="method">Método</label>
+                    <select name="method" id="method" className="bg-dark text-white rounded-md p-2" onChange={handleTypeChangePaymentMethod}>
+                        {method === "Receber" && (
+                            <option value="4">Deposito</option>
+                        )}
+                        {method === "Pagar" && (
+                            <>  <option value="1">Pix</option>
+                                <option value="2">Cartão de Crédito</option>
+                                <option value="3">Cartão de Débito</option>
+                            </>
+                        )}
+                    </select>
                 </div>
-
-                <div className="flex flex-col mb-4">
-                    <div className="flex items-center mb-2">
-                        <input
-                            type="checkbox"
-                            name="cardType"
-                            value="debit"
-                            className="mr-2"
-                            checked={isDebit}
-                            onChange={handleCheckboxChange}
-                            required={!isCredit}
-                        />
-                        <span className="text-light">Débito</span>
-                    </div>
-                    <div className="flex items-center">
-                        <input
-                            type="checkbox"
-                            name="cardType"
-                            value="credit"
-                            className="mr-2"
-                            checked={isCredit}
-                            onChange={handleCheckboxChange}
-                            required={!isDebit}
-                        />
-                        <span className="text-light">Crédito</span>
-                    </div>
+                <div className="value flex flex-col space-y-4">
+                    <label htmlFor="value">Valor</label>
+                    <CurrencyInput name="value" />
                 </div>
-
-                {isCredit && (
+                {paymentMethod === "Pix" && (
                     <div className="flex flex-col mb-4">
-                        <label className="text-sm text-light">Limite</label>
-                        <CurrencyInput
-                            name="limit"
+                        <label htmlFor="key">Chave Pix</label>
+                        <input
+                            type="text"
+                            name="key"
                             className="p-2 rounded-md bg-semiDark text-light"
+                            placeholder="Chave Pix"
                             required
                         />
-
-
                     </div>
                 )}
+                {paymentMethod === "Cartão de Crédito" && (
+                    <><div className="flex flex-col mb-4">
+                        <label htmlFor="card">Cartão de Crédito</label>
+                        <select
+                            name="card"
+                            id="card"
+                            className="bg-dark text-white rounded-md p-2"
+                            onChange={(e) => {
+                                const selectedCard = creditCards.find(card => card._cardId === e.target.value);
+                                if (selectedCard) {
+                                    changeSelectedCard(selectedCard);
+                                }
+                            }}
+                        >
+                            {creditCards.map((card) => (
+                                <option key={card._cardId} value={card._cardId}>
+                                    {card._cardNumber}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                        <div className="flex flex-col mb-4">
+                            <label htmlFor="cvv">CVV</label>
+                            <input
+                                type="text"
+                                name="cvv"
+                                className="p-2 rounded-md bg-semiDark text-light"
+                                placeholder="123"
+                                maxLength={3}
+                                pattern="\d{3}"
+                                onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '')}
+                                required
+                            />
+                        </div>
+                    </>
+                )
+                }
+                {
+                    paymentMethod === "Cartão de Débito" && (
+                        <><div className="flex flex-col mb-4">
+                            <label htmlFor="card">Cartão de Débito</label>
+                            <select name="card" id="card" className="bg-dark text-white rounded-md p-2">
+                                {debitCards.map((card) => (
+                                    <option key={card._cardId} value={card._cardId}>
+                                        {card._cardNumber}
+                                    </option>
+
+
+                                ))}
+                            </select>
+                        </div><div className="flex flex-col mb-4">
+                                <label htmlFor="cvv">CVV</label>
+                                <input
+                                    type="text"
+                                    name="cvv"
+                                    className="p-2 rounded-md bg-semiDark text-light"
+                                    placeholder="123"
+                                    maxLength={3}
+                                    pattern="\d{3}"
+                                    onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '')}
+                                    required />
+                            </div></>
+
+                    )
+                }
+
                 <div className="flex items-center justify-between">
                     <button
                         className="bg-accent hover:bg-lightAccent text-dark font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -158,9 +274,12 @@ export default function CardView({ sendShowComponent }: TrasactionViewProps) {
                         Cancelar
                     </button>
                 </div>
-            </form>
-            {showModal && <Modal result={result} closeModal={() => setShowModal(false)} />}
 
-        </div>
+
+            </form >
+            {showModal && <Modal result={result} closeModal={() => setShowModal(false)} />
+            }
+
+        </div >
     );
 }
