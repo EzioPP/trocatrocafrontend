@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { CardProps, TransactionProps } from "../local-constants";
+import { CardProps, ClientProps, TransactionProps } from "../local-constants";
 import CurrencyInput from "@/global-components/CurrencyInput";
 type TrasactionViewProps = {
     sendShowComponent: (showComponent: string) => void;
@@ -27,30 +27,31 @@ const Modal = ({ result, closeModal }: { result: string | null, closeModal: () =
 export default function AddtTransactionView({ sendShowComponent }: TrasactionViewProps) {
     const [showComponent, setShowComponent] = useState<string>("none");
     const [showModal, setShowModal] = useState(false);
-    const [method, setMethod] = useState<string>("none");
-    const [paymentMethod, setPaymentMethod] = useState<string>("none");
-    const [result, setResult] = useState<number | null>(null);
+    const [method, setMethod] = useState<string>("Pagar");
+    const [paymentMethod, setPaymentMethod] = useState<string>("Pix");
+    const [result, setResult] = useState<string | null>(null);
     const [transaction, setTransaction] = useState<TransactionProps | null>(null);
     const [creditCards, setCreditCards] = useState<CardProps[]>([]);
     const [debitCards, setDebitCards] = useState<CardProps[]>([]);
+    const [client, setClient] = useState<ClientProps | null>(null);
     const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
 
     useEffect(() => {
-        async function fetchCards() {
+        async function fetchData() {
             try {
                 const creditCards = await getCreditCards();
                 setCreditCards(creditCards);
                 const debitCards = await getDebitCards();
                 setDebitCards(debitCards);
-                console.log(creditCards);
-                console.log(debitCards);
+                const client = await getClient();
+                setClient(client);
 
             } catch (error) {
                 console.error(error);
             }
         }
 
-        fetchCards();
+        fetchData();
     }, []);
     const handleShowComponent = () => {
         setShowComponent("none");
@@ -61,29 +62,123 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
     const changeSelectedCard = (card: CardProps) => {
         setSelectedCard(card);
     }
+
+    async function getClient(): Promise<ClientProps> {
+        const response = await fetch('http://localhost:5015/api/client/client', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+        });
+        console.log(response);
+        if (response.ok) {
+            const client = await response.json();
+            if (!client) {
+                throw new Error('Failed to fetch client');
+            }
+            client._balance = parseFloat(client._balance).toFixed(2);
+
+            return client as ClientProps;
+        } else {
+            throw new Error('Failed to fetch client');
+        }
+    }
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         try {
             const formData = new FormData(event.currentTarget);
-            const value = formData.get('type') as string;
-            if (value === "1") {
-                const response = await fetch('http://localhost:5015/api/transaction/client', {
+            const type = formData.get('type') as string;
+            console.log(type);
+            if (type === "2") {
+                const value = formData.get('value')?.toString().replace(/[^\d,]/g, '').replace(',', '.');
+                if (!value) {
+                    console.log("Valor inválido");
+                    setShowModal(true);
+                    setResult("Valor inválido");
+                    return;
+                }
+                console.log("adasdas");
+                let totalValue = parseFloat(value);
+                if (totalValue <= 0) {
+                    console.log("Valor inválido");
+                    setShowModal(true);
+                    setResult("Valor inválido");
+                    return;
+                }
+
+
+                const body = {
+                    value: totalValue,
+                    type: "Deposito",
+                    status: "Aprovado",
+                };
+
+                const response = await fetch('http://localhost:5015/api/transaction/transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
                     credentials: 'include',
-                    body: JSON.stringify({
-                        value: formData.get('value'),
-                        paymentMethod: paymentMethod,
-                        cardId: selectedCard?._cardId,
-                        cvv: formData.get('cvv'),
-                    }),
                 });
+
                 if (response.ok) {
-                    setResult(200);
-                } else {
-                    setResult(500);
+                    handleShowComponent();
+                    sendShowComponent("none");
+                    location.reload();
+                    return;
                 }
             }
+            const method = formData.get('method') as string;
+            if (method === "1") {
+                const key = formData.get('key') as string;
+                if (!key) {
+                    console.log("Chave inválida");
+                    setShowModal(true);
+                    setResult("Chave inválida");
+                    return;
+                }
+                const value = formData.get('value')?.toString().replace(/[^\d,]/g, '').replace(',', '.');
+                if (!value) {
+                    console.log("Valor inválido");
+                    setShowModal(true);
+                    setResult("Valor inválido");
+                    return;
+                }
+                let totalValue = parseFloat(value);
+                if (totalValue <= 0) {
+                    console.log("Valor inválido");
+                    setShowModal(true);
+                    setResult("Valor inválido");
+                    return;
+                }
+
+
+                const keyType = formData.get('keyType') as string;
+
+
+
+                const body = {
+                    value: totalValue,
+                    type: "Pix",
+                    status: "Aprovado",
+                    key,
+                    keyType,
+
+                };
+
+                const response = await fetch('http://localhost:5015/api/transaction/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    handleShowComponent();
+                    sendShowComponent("none");
+                    location.reload();
+                    return;
+                }
+            }
+
 
         } catch (error) {
 
@@ -107,6 +202,7 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
         const type = event.target.value;
         if (type === "1") {
             setPaymentMethod("Pix");
+            console.log("Pix");
         }
         if (type === "2") {
             setPaymentMethod("Cartão de Crédito");
@@ -182,16 +278,23 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
                     <CurrencyInput name="value" />
                 </div>
                 {paymentMethod === "Pix" && (
-                    <div className="flex flex-col mb-4">
-                        <label htmlFor="key">Chave Pix</label>
-                        <input
-                            type="text"
-                            name="key"
-                            className="p-2 rounded-md bg-semiDark text-light"
-                            placeholder="Chave Pix"
-                            required
-                        />
-                    </div>
+                    <><div className="flex flex-col mb-4">
+                        <label htmlFor="key">Tipo de chave</label>
+                        <select name="keyType" className="bg-dark text-white rounded-md p-2">
+                            <option value="CPF">CPF</option>
+                            <option value="Email">Email</option>
+                            <option value="Telefone">Telefone</option>
+                        </select>
+                    </div><div className="flex flex-col mb-4">
+                            <label htmlFor="key">Chave Pix</label>
+                            <input
+                                type="text"
+                                name="key"
+                                className="p-2 rounded-md bg-semiDark text-light"
+                                placeholder="Chave Pix"
+                                required />
+                        </div></>
+
                 )}
                 {paymentMethod === "Cartão de Crédito" && (
                     <><div className="flex flex-col mb-4">
@@ -277,7 +380,7 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
 
 
             </form >
-            {showModal && <Modal result={result} closeModal={() => setShowModal(false)} />
+            {showModal && <Modal result={result !== null ? result.toString() : null} closeModal={() => setShowModal(false)} />
             }
 
         </div >

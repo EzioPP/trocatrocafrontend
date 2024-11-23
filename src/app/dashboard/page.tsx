@@ -23,7 +23,6 @@ async function getTransactions(): Promise<TransactionProps[]> {
     console.log(response);
     if (response.ok) {
         const transactions = await response.json();
-        console.log(transactions);
         return transactions;
     } else {
         throw new Error('Failed to fetch transactions');
@@ -168,17 +167,6 @@ export default function Dashboard() {
                                                 {client && getPixKeys(client, pix._keyType)}
                                             </p>
                                         </div>
-                                        <div className="pix_icon">
-                                            <a href="#">
-                                                <Image
-                                                    priority
-                                                    src={pixIcon}
-                                                    alt="Pix icon"
-                                                    width={36}
-                                                    height={36}
-                                                />
-                                            </a>
-                                        </div>
                                     </li>
                                 ))}
 
@@ -228,32 +216,37 @@ export default function Dashboard() {
                 </div>
                 <div className="transactions_list w-full flex justify-center">
                     <ul className="space-y-4 w-full max-w-4xl">
-                        {transactions.map((transaction, index) => (
-                            <li
-                                key={index}
-                                className="transaction_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between"
-                            >
-                                <div className="transaction_info flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                                    <div className="flex space-x-4">
-                                        <p className="date text-sm text-gray-500">{transaction._date}</p>
-                                        <p className={`text-lg font-semibold ${transaction._value > 0 ? "text-green-500" : "text-red-800"}`}>R$ {transaction._value}</p>
+                        {transactions
+                            .sort((a, b) => new Date(b._transactionDate).getTime() - new Date(a._transactionDate).getTime())
+                            .map((transaction, index) => (
+                                <li
+                                    key={index}
+                                    className="transaction_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between"
+                                >
+                                    <div className="transaction_info flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                                        <div className="flex space-x-4">
+                                            <p className="date text-sm text-gray-500">{transaction._transactionDate.replace("T", " ")
+                                                .replace(/\.\d+Z$/, "")
+                                                .replace(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/, "$3/$2/$1 $4:$5")}</p>
+
+                                            <p className={`text-lg font-semibold ${transaction._value > 0 ? "text-green-500" : "text-red-800"}`}>R$ {transaction._value}</p>
+                                        </div>
+                                        <div className="flex space-x-4">
+                                            <p className="type text-sm text-gray-500">{transaction._type}</p>
+                                            <p
+                                                className={`status text-sm ${transaction._status === "Aprovado"
+                                                    ? "text-green-500"
+                                                    : transaction._status === "Recusado"
+                                                        ? "text-red-500"
+                                                        : "text-yellow-500"
+                                                    }`}
+                                            >
+                                                {transaction._status}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex space-x-4">
-                                        <p className="type text-sm text-gray-500">{transaction._type}</p>
-                                        <p
-                                            className={`status text-sm ${transaction._status === "Aprovado"
-                                                ? "text-green-500"
-                                                : transaction._status === "Recusado"
-                                                    ? "text-red-500"
-                                                    : "text-yellow-500"
-                                                }`}
-                                        >
-                                            {transaction._status}
-                                        </p>
-                                    </div>
-                                </div>
-                            </li>
-                        ))}
+                                </li>
+                            ))}
                     </ul>
                 </div>
             </div>
