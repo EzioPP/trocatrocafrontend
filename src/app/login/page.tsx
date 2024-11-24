@@ -47,7 +47,7 @@ export default function Login() {
         <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
           <div className="text-center mb-6">
             <Image
-              src="/logo1.png" // Altere para o logo do banco
+              src="/logo1.svg" // Altere para o logo do banco
               alt="Logo"
               width={100}
               height={100}
