@@ -43,91 +43,89 @@ export default function Login() {
   const closeModal = () => setShowModal(false);
   return (
     <>
-      <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8 p-4">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm text-center">
-          <Image
-            src="/logo.svg"
-            width={38}
-            height={38}
-            alt={'logo'}
-            className='mx-auto h-40 w-auto'
-            priority={true}
-          />
-          <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-light">
-            Entre com sua conta
-          </h2>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-blue-900"> {/* Alterei para o fundo azul escuro */}
+        <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
+          <div className="text-center mb-6">
+            <Image
+              src="/logo1.png" // Altere para o logo do banco
+              alt="Logo"
+              width={100}
+              height={100}
+              className="mx-auto"
+              priority={true}
+            />
+            <h2 className="text-2xl font-semibold text-black mt-4"> {/* Altere para texto preto */}
+              Acesse sua Conta Bancária
+            </h2>
+            <p className="text-black text-sm">Gerencie suas finanças de forma segura</p> {/* Altere para texto preto */}
+          </div>
 
-        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form action="#" method="POST" className="space-y-6" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="usuario" className="block text-sm/6 font-medium text-accent">
-                Usuario
+            <label htmlFor="username" className="block text-lg font-medium text-black">
+                Usuário
               </label>
-              <div className="mt-2">
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  autoComplete="username"
-                  className="block w-full rounded-md border-0 py-1.5 text-accent bg-black shadow-sm ring-1 ring-inset ring-light placeholder:text-light focus:ring-2 focus:ring-inset focus:ring-light sm:text-sm/6"
-                />
-              </div>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                autoComplete="username"
+                className="mt-1 block w-full border-black-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black"
+              />
             </div>
 
             <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm/6 font-medium text-accent ">
-                  Senha
-                </label>
-
-              </div>
-              <div className="mt-2">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  className="block w-full rounded-md border-0 py-1.5 text-accent bg-black shadow-sm ring-1 ring-inset ring-light placeholder:text-light focus:ring-2 focus:ring-inset focus:ring-light sm:text-sm/6"
-                />
-              </div>
+            <label htmlFor="username" className="block text-lg font-medium text-black">
+                Senha
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+               className="mt-1 block w-full border-black-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black"
+              />
             </div>
 
-            <div className="text-sm">
-              <a href="/register"
-                className="font-semibold text-lightAccent">
-                Não tem uma conta? <span className="text-Accent">Registre-se</span>
-              </a>
-
-            </div>
-            <div>
-              <button
-                type="submit"
-                className="flex w-full justify-center rounded-md bg-black  px-3 py-1.5 text-sm/6 font-semibold text-white shadow-sm hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light"
+            <div className="flex items-center justify-between">
+              <a
+                href="/register"
+                className="text-sm text-blue-500 hover:underline"
               >
-                Entrar
-              </button>
+                Não tem uma conta? Registre-se
+              </a>
+              <a
+                href="/forgot-password"
+                className="text-sm text-blue-500 hover:underline"
+              >
+                Esqueceu a senha?
+              </a>
             </div>
+
+            <button
+              type="submit"
+              className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Entrar
+            </button>
           </form>
         </div>
       </div>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-dark p-6 rounded-md shadow-md max-w-sm w-full">
-            <p className="mt-4 text-center">
-
-              {result === 500 && "Houve um erro no servidor."}
-              {result === 404 && "Usuário não encontrado."}
-              {result === 401 && "Senha inválida."}
-
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm">
+            <p className="text-center text-black"> {/* Alterei para texto preto */}
+              {result === 500 && 'Erro no servidor. Tente novamente mais tarde.'}
+              {result === 404 && 'Usuário não encontrado.'}
+              {result === 401 && 'Credenciais inválidas. Tente novamente.'}
             </p>
             <div className="mt-6 text-center">
               <button
                 onClick={closeModal}
-                className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-slate-800"
+                className="py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Fechar
               </button>
@@ -137,4 +135,4 @@ export default function Login() {
       )}
     </>
   );
-};
+}
