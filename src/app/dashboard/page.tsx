@@ -5,7 +5,7 @@ import Image from "next/image";
 import documentIcon from "@public/icons/document.svg";
 import cardIcon from "@public/icons/card.svg";
 import pixIcon from "@public/icons/qr_code.svg";
-
+import renan from "@public/renan.jpg";
 import CardView from "./components/CardView";
 import AddCardView from "./components/AddCardView";
 import AddPixKeyView from "./components/AddPixKeyView";
@@ -95,6 +95,20 @@ function getPixKeys(client: ClientProps, keyType: string): string {
     }
     return '';
 }
+
+async function logout() {
+    const response = await fetch('http://localhost:5015/api/user/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    if (response.ok) {
+        window.location.href = "/login";
+    } else {
+        throw new Error('Failed to logout');
+    }
+}
+
 export default function Dashboard() {
     const [showComponent, setShowComponent] = useState<string | null>("none");
 
@@ -143,13 +157,30 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-playfair text-accent"> Troca Troca Transações </h1>
             </div>
             <div className="header text-center mb-8 flex items-center justify-between w-full max-w-4xl">
-                <div className="balance_info text-center mb-8">
-                    <h2 className="text-3xl font-semibold mb-2">Saldo</h2>
-                    <p className="text-2xl font-bold text-accent">${client?._balance}</p>
-                    <div className="make_transaction text-center mb-8">
-                        <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => { setShowComponent("addTransaction") }
-                        }>Realizar Transação</button>
+                <div className="user text-center mb-8">
+                    <div className="user_info text-center mb-8">
+                        <div className="user_avatar relative w-32 h-32 rounded-full overflow-hidden">
+                            <Image
+                                src={renan}
+                                alt="Renan"
+                                layout="fill"
+                                objectFit="cover"
+                                className="rounded-full"
+                            />
+                        </div>
+                        <p className="text-lg font-semibold">{client?._name}</p>
+                        <p className="text-sm text-gray-500">{client?._email}</p>
+                        <button className="logout mt-4 px-4 py-2 bg-rose-900 text-white rounded" onClick={logout}>Sair</button>
                     </div>
+                    <div className="balance_info text-center mb-8">
+                        <h2 className="text-3xl font-semibold mb-2">Saldo</h2>
+                        <p className="text-2xl font-bold text-accent">${client?._balance}</p>
+                        <div className="make_transaction text-center mb-8">
+                            <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => { setShowComponent("addTransaction") }
+                            }>Realizar Transação</button>
+                        </div>
+                    </div>
+
                 </div>
                 <div className="pix-cards flex flex-row items-center justify-between w-full max-w-4xl pl-80">
 
