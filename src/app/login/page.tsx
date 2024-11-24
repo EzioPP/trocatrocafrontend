@@ -43,14 +43,14 @@ export default function Login() {
   const closeModal = () => setShowModal(false);
   return (
     <>
-      <div className="min-h-screen flex flex-col items-center justify-center bg-blue-900"> {/* Alterei para o fundo azul escuro */}
+      <div className="min-h-screen flex flex-col items-center justify-center bg-blue-950"> {/* Alterei para o fundo azul escuro */}
         <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
           <div className="text-center mb-6">
             <Image
               src="/logo1.svg" // Altere para o logo do banco
               alt="Logo"
-              width={100}
-              height={100}
+              width={200}
+              height={200}
               className="mx-auto"
               priority={true}
             />
