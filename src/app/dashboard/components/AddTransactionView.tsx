@@ -179,6 +179,44 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
                 }
             }
 
+            if (method === "4") {
+                const value = formData.get('value')?.toString().replace(/[^\d,]/g, '').replace(',', '.');
+                if (!value) {
+                    console.log("Valor inválido");
+                    setShowModal(true);
+                    setResult("Valor inválido");
+                    return;
+                }
+                let totalValue = parseFloat(value);
+                if (totalValue <= 0) {
+                    console.log("Valor inválido");
+                    setShowModal(true);
+                    setResult("Valor inválido");
+                    return;
+                }
+
+                const body = {
+                    value: totalValue,
+                    type: "Saque",
+                    status: "Aprovado",
+                };
+
+                const response = await fetch('http://localhost:5015/api/transaction/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    handleShowComponent();
+                    sendShowComponent("none");
+                    location.reload();
+                    return;
+                }
+
+
+            }
 
         } catch (error) {
 
@@ -267,8 +305,10 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
                         )}
                         {method === "Pagar" && (
                             <>  <option value="1">Pix</option>
+
                                 <option value="2">Cartão de Crédito</option>
                                 <option value="3">Cartão de Débito</option>
+                                <option value="4">Saque</option>
                             </>
                         )}
                     </select>

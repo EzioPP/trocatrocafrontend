@@ -10,6 +10,8 @@ import CardView from "./components/CardView";
 import AddCardView from "./components/AddCardView";
 import AddPixKeyView from "./components/AddPixKeyView";
 import AddtTransactionView from "./components/AddTransactionView";
+import AddImageView from "./components/AddImageView";
+import ImageDisplay from "./components/ImageComponent";
 
 
 import { CardProps, TransactionProps, roboto, playfair, PixProps, ClientProps } from "./local-constants";
@@ -118,6 +120,7 @@ export default function Dashboard() {
     const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
     const [client, setClient] = useState<ClientProps | null>(null);
     const [pix, setPix] = useState<PixProps[]>([]);
+    const [profileImage, setProfileImage] = useState<string | null>(null);
 
 
     const sendShowComponent = useCallback((show: string) => {
@@ -153,20 +156,15 @@ export default function Dashboard() {
             {showComponent === "addCard" && <AddCardView sendShowComponent={sendShowComponent} />}
             {showComponent === "addPix" && <AddPixKeyView sendShowComponent={sendShowComponent} />}
             {showComponent === "addTransaction" && <AddtTransactionView sendShowComponent={sendShowComponent} />}
+            {showComponent === "addImage" && <AddImageView sendShowComponent={sendShowComponent} />}
             <div className="flex items-center justify-center py-8">
                 <h1 className="text-3xl font-playfair text-accent"> Troca Troca Transações </h1>
             </div>
             <div className="header text-center mb-8 flex items-center justify-between w-full max-w-4xl">
                 <div className="user text-center mb-8">
                     <div className="user_info text-center mb-8">
-                        <div className="user_avatar relative w-32 h-32 rounded-full overflow-hidden">
-                            <Image
-                                src={renan}
-                                alt="Renan"
-                                layout="fill"
-                                objectFit="cover"
-                                className="rounded-full"
-                            />
+                        <div className="user_avatar relative w-32 h-32 rounded-full overflow-hidden" onClick={() => { setShowComponent("addImage") }}>
+                            <ImageDisplay />
                         </div>
                         <p className="text-lg font-semibold">{client?._name}</p>
                         <p className="text-sm text-gray-500">{client?._email}</p>
@@ -174,7 +172,7 @@ export default function Dashboard() {
                     </div>
                     <div className="balance_info text-center mb-8">
                         <h2 className="text-3xl font-semibold mb-2">Saldo</h2>
-                        <p className="text-2xl font-bold text-accent">${client?._balance}</p>
+                        <p className="text-2xl font-bold text-accent">R${client?._balance}</p>
                         <div className="make_transaction text-center mb-8">
                             <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => { setShowComponent("addTransaction") }
                             }>Realizar Transação</button>
