@@ -1,135 +1,207 @@
-"use client";
+'use client';
+import { useState, useEffect } from "react";
 
-import { useEffect, useState } from "react";
-import { CardProps, PixProps, roboto } from "/src/app/dashboard/local-constants.ts";  // Ajuste o caminho conforme necessário
-import Image from "next/image";
-import cardIcon from "@public/icons/card.svg";  // Ajuste conforme a localização do ícone
-import pixIcon from "@public/icons/qr_code.svg";  // Ajuste conforme a localização do ícone
-
-// Funções para obter as informações de cartões e PIX
-async function getCards(): Promise<CardProps[]> {
-  const response = await fetch('http://localhost:5015/api/card/client', {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
-  if (response.ok) {
-    return await response.json();
-  } else {
-    throw new Error('Failed to fetch cards');
-  }
+interface PixKey {
+    id: string;
+    keyType: string;
+    keyValue: string;
 }
 
-async function getPix(): Promise<PixProps[]> {
-  const response = await fetch('http://localhost:5015/api/pix/client', {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
-  if (response.ok) {
-    return await response.json();
-  } else {
-    throw new Error('Failed to fetch PIX keys');
-  }
-}
+async function getClient(): Promise<{ _balance: string; cpf: string; email: string; telefone: string }> {
+    const response = await fetch('http://localhost:5015/api/client/client', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
 
-export default function Receber() {
-  const [cards, setCards] = useState<CardProps[]>([]);
-  const [pix, setPix] = useState<PixProps[]>([]);
-  const [showAddCard, setShowAddCard] = useState<boolean>(false);
-  const [showAddPix, setShowAddPix] = useState<boolean>(false);
+    // Verifique a resposta antes de parsear
+    const textResponse = await response.text(); // Lê a resposta como texto
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [clientCards, clientPix] = await Promise.all([getCards(), getPix()]);
-        setCards(clientCards);
-        setPix(clientPix);
-      } catch (error) {
-        console.error(error);
-      }
+    // Imprime a resposta no console para depuração
+    console.log('Resposta bruta:', textResponse);
+
+    try {
+        const client = JSON.parse(textResponse); // Tenta fazer o parse manualmente
+        client._balance = parseFloat(client._balance).toFixed(2);
+        return client;
+    } catch (error) {
+        throw new Error('Erro ao analisar a resposta da API. ' + error.message);
     }
+}
 
-    fetchData();
-  }, []);
+async function getPixKeys(): Promise<PixKey[]> {
+    const response = await fetch('http://localhost:5015/api/pix/client', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
 
-  // Funções de controle para abrir os formulários de adicionar cartão ou pix
-  const handleAddCard = () => {
-    setShowAddCard(true); // Exemplo de abrir um formulário de adicionar cartão
-  };
+    // Verifique a resposta antes de parsear
+    const textResponse = await response.text(); // Lê a resposta como texto
 
-  const handleAddPix = () => {
-    setShowAddPix(true); // Exemplo de abrir um formulário de adicionar chave PIX
-  };
+    // Imprime a resposta no console para depuração
+    console.log('Resposta das chaves Pix:', textResponse);
 
-  return (
-    <div className={`receber_main min-h-screen flex flex-col items-center justify-center ${roboto.className} p-6`}>
-      <div className="flex items-center justify-center py-8">
-        <h1 className="text-3xl font-playfair text-accent">Receber Pagamentos</h1>
-      </div>
+    try {
+        const pixKeys = JSON.parse(textResponse); // Tenta fazer o parse manualmente
+        return pixKeys;
+    } catch (error) {
+        throw new Error('Erro ao analisar as chaves Pix. ' + error.message);
+    }
+}
 
-      <div className="flex flex-col sm:flex-row items-start justify-between w-full max-w-4xl px-4 space-y-8 sm:space-y-0 sm:space-x-8">
-        
-        {/* Cartões */}
-        <div className="cards_section w-full sm:w-1/2">
-          <h2 className="text-3xl font-semibold mb-2">Meus Cartões</h2>
-          <button
-            className="mt-4 px-4 py-2 bg-accent text-white rounded"
-            onClick={handleAddCard}  // Chama a função para exibir o formulário de adicionar cartão
-          >
-            Adicionar Cartão
-          </button>
-          <div className="cards_list mt-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-neutral-800">
-            <ul className="space-y-4">
-              {cards.map((card, index) => (
-                <li key={index} className="card_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between">
-                  <div className="card_info">
-                    <p className="text-lg font-semibold">{card._cardNumber.replace(/\d(?=\d{4})/g, "*")}</p>
-                    <p className="text-sm text-gray-500">{card._expirationDate.split("T")[0]}</p>
-                  </div>
-                  <div className="card_icon">
-                    <Image src={cardIcon} alt="Card icon" width={36} height={36} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+async function receivePix(amount: number, pixKeyId: string): Promise<string> {
+    const response = await fetch('http://localhost:5015/api/pix/receive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ amount, pixKeyId }),
+    });
+
+    if (response.ok) {
+        return "Pix recebido com sucesso!";
+    } else {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao receber Pix");
+    }
+}
+
+export default function ReceivePix() {
+    const [balance, setBalance] = useState<number>(0);
+    const [amount, setAmount] = useState<string>(""); 
+    const [pixKeys, setPixKeys] = useState<PixKey[]>([]);
+    const [selectedPixKey, setSelectedPixKey] = useState<string>("");
+    const [message, setMessage] = useState<string>("");
+    const [clientInfo, setClientInfo] = useState<{ cpf: string, email: string, telefone: string }>({
+        cpf: '',
+        email: '',
+        telefone: '',
+    });
+
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const client = await getClient();
+                setBalance(parseFloat(client._balance));
+                setClientInfo({
+                    cpf: client.cpf,
+                    email: client.email,
+                    telefone: client.telefone
+                });
+
+                const keys = await getPixKeys();
+                setPixKeys(keys);
+
+                if (keys.length > 0) {
+                    setSelectedPixKey(keys[0].id); // Selecionar a primeira chave por padrão
+                }
+            } catch (error) {
+                console.error(error);
+                setMessage("Erro ao carregar dados");
+            }
+        }
+
+        fetchData();
+    }, []);
+
+    const handleReceivePix = async () => {
+        try {
+            const pixAmount = parseFloat(amount);
+
+            if (isNaN(pixAmount) || pixAmount <= 0) {
+                setMessage("Digite um valor válido para o Pix.");
+                return;
+            }
+
+            if (!selectedPixKey) {
+                setMessage("Selecione uma chave Pix válida.");
+                return;
+            }
+
+            if (pixAmount > balance) {
+                setMessage("Erro: O valor do Pix excede o saldo disponível.");
+                return;
+            }
+
+            await receivePix(pixAmount, selectedPixKey);
+            setBalance((prevBalance) => prevBalance - pixAmount);
+            setMessage("Pix recebido com sucesso!");
+            setAmount("");
+        } catch (error: any) {
+            setMessage(error.message || "Erro ao processar o Pix.");
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-neutral-100 flex flex-col">
+            {/* Cabeçalho */}
+            <header className="w-full bg-white shadow-md py-4 mb-8">
+                <div className="max-w-4xl mx-auto flex justify-between items-center">
+                    <div className="flex items-center space-x-6">
+                        <h1 className="text-3xl font-bold text-blue-900">
+                            Troca Troca Transações
+                        </h1>
+                    </div>
+                    <div className="text-gray-600 text-base">
+                        <p>Bem-vindo(a)</p>
+                        <p className="font-medium">Acesse suas opções abaixo</p>
+                    </div>
+                </div>
+            </header>
+
+            {/* Camada branca com o conteúdo centralizado */}
+            <div className="flex flex-grow justify-center items-center bg-neutral-100">
+                <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg flex flex-col items-center gap-6">
+                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">Receber Pix</h2>
+                    <p className="text-lg text-gray-600 mb-6">Saldo disponível: R$ {balance.toFixed(2)}</p>
+
+                    <div className="flex flex-col items-center w-full">
+                        <label className="text-sm font-medium text-gray-700 mb-2">Selecione a chave Pix:</label>
+                        <select
+                            value={selectedPixKey}
+                            onChange={(e) => setSelectedPixKey(e.target.value)}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        >
+                            {pixKeys.map((key) => (
+                                <option key={key.id} value={key.id}>
+                                    {key.keyType}: {key.keyValue}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div className="w-full">
+                            <p className="text-sm font-medium text-gray-700">Dados de cadastro:</p>
+                            <p className="text-sm text-gray-600">CPF: {clientInfo.cpf}</p>
+                            <p className="text-sm text-gray-600">E-mail: {clientInfo.email}</p>
+                            <p className="text-sm text-gray-600">Telefone: {clientInfo.telefone}</p>
+                        </div>
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            placeholder="Digite o valor do Pix"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72 text-center"
+                        />
+                        <button
+                            onClick={handleReceivePix}
+                            className="px-8 py-3 bg-green-700 text-white rounded-md shadow-md hover:bg-green-600 transition duration-300 w-full text-lg font-semibold"
+                        >
+                            Receber Pix
+                        </button>
+                    </div>
+
+                    {message && <p className="mt-6 text-lg text-gray-700 text-center">{message}</p>}
+                </div>
+            </div>
+
+            {/* Logo no canto inferior direito */}
+            <img
+                src="/logo2.svg"
+                alt="Logo"
+                className="w-64 h-64 fixed bottom-6 right-6 object-contain"
+            />
         </div>
-
-        {/* PIX */}
-        <div className="pix_section w-full sm:w-1/2">
-          <h2 className="text-3xl font-semibold mb-2">Meus PIX</h2>
-          <button
-            className="mt-4 px-4 py-2 bg-accent text-white rounded"
-            onClick={handleAddPix}  // Chama a função para exibir o formulário de adicionar PIX
-          >
-            Adicionar PIX
-          </button>
-          <div className="pix_list mt-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-neutral-800">
-            <ul className="space-y-4">
-              {pix.map((pixItem, index) => (
-                <li key={index} className="pix_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between">
-                  <div className="pix_info">
-                    <p className="text-lg font-semibold">{pixItem._keyType}</p>
-                    <p className="text-sm text-gray-500">
-                      {pixItem._keyType === 'CPF' ? 'CPF: ' + pixItem._key : 
-                       pixItem._keyType === 'Telefone' ? 'Telefone: ' + pixItem._key : 
-                       'Email: ' + pixItem._key}
-                    </p>
-                  </div>
-                  <div className="pix_icon">
-                    <Image src={pixIcon} alt="Pix icon" width={36} height={36} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Condicional para exibir formulários de adicionar Cartão ou Pix */}
-      {showAddCard && <div>Adicionar Cartão</div>}  {/* Aqui você pode colocar seu formulário de adicionar cartão */}
-      {showAddPix && <div>Adicionar PIX</div>}      {/* Aqui você pode colocar seu formulário de adicionar PIX */}
-    </div>
-  );
+    );
 }
