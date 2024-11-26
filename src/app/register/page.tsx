@@ -91,7 +91,7 @@ export default function Login() {
             priority={true}
           />
           <h2 className="mt-8 text-3xl font-semibold text-white"> {/* Alterei a cor do texto para branco */}
-            Crie sua conta bancária
+            Os dados enseridos aqui será suas chaves pix2
           </h2>
         </div>
 
