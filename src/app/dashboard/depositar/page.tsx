@@ -34,15 +34,20 @@ const fetchData = async (endpoint: string): Promise<any> => {
 };
 
 async function getCards(): Promise<CardProps[]> {
-    return await fetchData('http://localhost:5015/api/card/client');
+    const cards = await fetchData('http://localhost:5015/api/card/client');
+    console.log("Cards fetched:", cards);
+    return cards;
 }
 
 async function getTransactions(): Promise<TransactionProps[]> {
-    return await fetchData('http://localhost:5015/api/transaction/client');
+    const transactions = await fetchData('http://localhost:5015/api/transaction/client');
+    console.log("Transactions fetched:", transactions);
+    return transactions;
 }
 
 async function getClient(): Promise<ClientProps> {
     const clientData = await fetchData('http://localhost:5015/api/client/client');
+    console.log("Client data fetched:", clientData);
     if (!clientData) {
         throw new Error('Cliente não encontrado');
     }
@@ -51,7 +56,9 @@ async function getClient(): Promise<ClientProps> {
 }
 
 async function getPix(): Promise<PixProps[]> {
-    return await fetchData('http://localhost:5015/api/pix/client');
+    const pixData = await fetchData('http://localhost:5015/api/pix/client');
+    console.log("Pix data fetched:", pixData);
+    return pixData;
 }
 
 async function logout() {
@@ -74,6 +81,7 @@ export default function Dashboard() {
     const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
     const [client, setClient] = useState<ClientProps | null>(null);
     const [pix, setPix] = useState<PixProps[]>([]);
+    const [error, setError] = useState<string | null>(null); // Adicionado para capturar erros
 
     const sendShowComponent = useCallback((show: string) => {
         setShowComponent(show);
@@ -91,14 +99,27 @@ export default function Dashboard() {
                 setCards(clientCards);
                 setClient(clientData);
                 setPix(clientPix);
+
+                // Debugging: Verificar se os dados foram setados corretamente
+                console.log("Transactions:", clientTransactions);
+                console.log("Cards:", clientCards);
+                console.log("Client:", clientData);
+                console.log("Pix:", clientPix);
             } catch (error) {
                 console.error("Erro ao carregar dados:", error.message || error);
+                setError("Falha ao carregar os dados.");
             }
         }
 
         fetchAllData();
     }, []);
 
+    // Se houve erro ao carregar os dados, mostra uma mensagem de erro
+    if (error) {
+        return <div>{error}</div>;
+    }
+
+    // Se os dados ainda não foram carregados, mostra a mensagem de carregamento
     if (!client || cards.length === 0 || pix.length === 0) {
         return <div>Carregando dados...</div>;
     }

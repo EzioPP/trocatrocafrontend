@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CardProps, TransactionProps, ClientProps } from "./local-constants";
 import Image from "next/image";
-import renan from "@public/renan.jpg";
+import renan from "@public/renan.jpg"; // Você pode substituir essa imagem pelo avatar do cliente vindo do backend
 
 // Função para buscar dados de um endpoint
 const fetchData = async (endpoint: string): Promise<any> => {
@@ -42,10 +42,22 @@ async function getClient(): Promise<ClientProps> {
     return clientData as ClientProps;
 }
 
+async function logout() {
+    const response = await fetch('http://localhost:5015/api/user/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    if (response.ok) {
+        window.location.href = "/login";
+    } else {
+        throw new Error('Falha ao sair');
+    }
+}
+
 export default function Saldo() {
     const [transactions, setTransactions] = useState<TransactionProps[]>([]);
     const [client, setClient] = useState<ClientProps | null>(null);
-    const [balance, setBalance] = useState<number>(0);
 
     useEffect(() => {
         async function fetchAllData() {
@@ -55,11 +67,6 @@ export default function Saldo() {
 
                 setTransactions(clientTransactions);
                 setClient(clientData);
-
-                // Calcula o saldo com base nas transações
-                const initialBalance = (clientData._balance);
-                const calculatedBalance = clientTransactions.reduce((acc, transaction) => acc + transaction._amount, initialBalance);
-                setBalance(calculatedBalance);
             } catch (error) {
                 console.error("Erro ao carregar dados:", error.message || error);
             }
@@ -80,33 +87,46 @@ export default function Saldo() {
             <div className="container max-w-6xl mx-auto p-6">
                 <div className="flex flex-wrap justify-between items-center mb-8">
                     <div className="flex items-center space-x-4">
-                        <Image
-                            src={renan}
-                            alt="Avatar"
-                            width={80}
-                            height={80}
-                            className="rounded-full"
-                        />
+                        {/* Exibindo a imagem do perfil */}
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden">
+                            {/* Aqui você pode substituir a imagem estática pelo link da imagem do cliente */}
+                            <Image
+                                src={client?._profileImage || renan} // Se o cliente tem imagem, use ela. Caso contrário, use a imagem padrão
+                                alt="Avatar"
+                                width={64}
+                                height={64}
+                                className="rounded-full"
+                            />
+                        </div>
                         <div>
                             <p className="text-xl font-semibold text-black">{client?._name}</p>
                             <p className="text-sm text-black">{client?._email}</p>
                         </div>
                     </div>
+                    {/* Botão de Logout */}
+                    <button
+                        className="ml-auto px-4 py-2 bg-red-500 text-white rounded"
+                        onClick={logout}
+                    >
+                        Sair
+                    </button>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded shadow p-6">
                         <h2 className="text-lg font-semibold text-blue-900 mb-4">Saldo</h2>
-                        <p className="text-2xl font-bold text-green-500">${balance}</p>
+                        <p className="text-2xl font-bold text-green-500">${client?._balance}</p>
                     </div>
                 </div>
+
                 <div className="bg-white rounded shadow p-6">
                     <h2 className="text-lg font-semibold text-blue-900 mb-4">Histórico de Transações</h2>
                     <ul className="space-y-4">
                         {transactions.length > 0 ? (
                             transactions.map((transaction, index) => (
                                 <li key={index} className="p-4 border-b border-gray-200">
-                                    <p className="text-sm font-medium text-black">{transaction._status}</p>
-                                    <p className="text-xs text-gray-500">{new Date(transaction._transactionDate).toLocaleString()}</p>
+                                    <p className="text-sm font-medium text-black">{transaction._description}</p>
+                                    <p className="text-xs text-gray-500">{new Date(transaction._date).toLocaleString()}</p>
                                     <p className={`text-lg ${transaction._amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
                                         ${transaction._amount !== undefined && !isNaN(transaction._amount)
                                             ? transaction._amount.toFixed(2)

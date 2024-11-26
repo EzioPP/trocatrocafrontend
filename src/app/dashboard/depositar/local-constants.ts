@@ -26,6 +26,7 @@ type CardProps = {
 };
 
 type PixProps = {
+    _keyValue: ReactNode;
     _pixId: number;
     _keyType: string;
     _clientId: number;
