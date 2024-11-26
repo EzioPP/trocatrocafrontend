@@ -91,7 +91,7 @@ export default function Login() {
             priority={true}
           />
           <h2 className="mt-8 text-3xl font-semibold text-white"> {/* Alterei a cor do texto para branco */}
-            Os dados enseridos aqui será suas chaves pix2
+            Os dados enseridos aqui será suas chaves pix
           </h2>
         </div>
 

@@ -10,8 +10,8 @@ import CardView from "./components/CardView";
 import AddCardView from "./components/AddCardView";
 import AddPixKeyView from "./components/AddPixKeyView";
 import AddtTransactionView from "./components/AddTransactionView";
-import AddImageView from "../components/AddImageView";
-import ImageDisplay from "../components/ImageComponent";
+import AddImageView from "./components/AddImageView";
+import ImageDisplay from "./components/ImageComponent";
 
 
 import { CardProps, TransactionProps, roboto, playfair, PixProps, ClientProps, ReportProps } from "./local-constants";

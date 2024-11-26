@@ -31,13 +31,11 @@ const Page = () => {
       <main className="flex flex-1 items-center justify-center w-full">
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md flex flex-col items-center gap-6">
           <Link href="/dashboard/receber">
-            <button className="px-8 py-4 bg-green-700 text-white rounded-md shadow-md hover:bg-green-600 transition duration-300 w-full text-xl font-semibold">
-              retirar
-            </button>
+          
           </Link>
           <Link href="/dashboard/depositar">
             <button className="px-8 py-4 bg-blue-700 text-white rounded-md shadow-md hover:bg-blue-600 transition duration-300 w-full text-xl font-semibold">
-              Depositar
+              Transações
             </button>
           </Link>
           <Link href="/dashboard/saldo">
