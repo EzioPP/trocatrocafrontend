@@ -125,12 +125,12 @@ export default function Saldo() {
                         {transactions.length > 0 ? (
                             transactions.map((transaction, index) => (
                                 <li key={index} className="p-4 border-b border-gray-200">
-                                    <p className="text-sm font-medium text-black">{transaction._description}</p>
-                                    <p className="text-xs text-gray-500">{new Date(transaction._date).toLocaleString()}</p>
+                                    <p className="text-sm font-medium text-black">{transaction._type}</p>
+                                    <p className="text-xs text-gray-500">{new Date(transaction._value).toLocaleString()}</p>
                                     <p className={`text-lg ${transaction._amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                                        ${transaction._amount !== undefined && !isNaN(transaction._amount)
-                                            ? transaction._amount.toFixed(2)
-                                            : 'Erro no valor'}
+                                        ${transaction._amount !== undefined && !isNaN(transaction._value)
+                                            ? transaction._amount
+                                            : ''}
                                     </p>
                                 </li>
                             ))

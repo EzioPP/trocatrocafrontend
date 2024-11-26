@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { CardProps } from "../local-constants";
 import CurrencyInput from "@/global-components/CurrencyInput";
 type CardViewProps = {
     sendShowComponent: (showComponent: string) => void;

@@ -11,25 +11,7 @@ type ProfileViewProps = {
     transactions: TransactionProps[] | null;
     sendShowComponent: (showComponent: string) => void;
 };
-/* const addImageModal = ({ client, sendShowComponent }: ProfileViewProps) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <input type="file" accept="image/jpg" onChange={(e) => {
-            const file = e.target.files ? e.target.files[0] : null;
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                fetch(`http://localhost:5015/api/client/${client?._clientId}/image`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ image: reader.result }),
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-    </div>
-);
- */
+
 export default function ProfileView({ client, cards, transactions, sendShowComponent }: ProfileViewProps) {
 
     const [showComponent, setShowComponent] = useState<string>("none");

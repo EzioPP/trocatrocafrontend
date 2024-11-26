@@ -77,9 +77,9 @@ async function receivePix(amount: number, pixKeyId: string): Promise<string> {
 export default function ReceivePix() {
     const [balance, setBalance] = useState<number>(0);
     const [amount, setAmount] = useState<string>(""); 
-    const [pixKeys, setPixKeys] = useState<PixKey[]>([]);
-    const [selectedPixKey, setSelectedPixKey] = useState<string>("");
-    const [message, setMessage] = useState<string>("");
+    const [pixKeys, setPixKeys] = useState<PixKey[]>([]); 
+    const [selectedPixKey, setSelectedPixKey] = useState<string>(""); 
+    const [message, setMessage] = useState<string>(""); 
     const [clientInfo, setClientInfo] = useState<ClientProps>({
         _balance: '0',
         cpf: '',
@@ -139,8 +139,7 @@ export default function ReceivePix() {
     };
 
     return (
-       
-       <div className="min-h-screen bg-neutral-100 flex flex-col">
+        <div className="min-h-screen bg-blue-100 flex flex-col">
             {/* Cabeçalho */}
             <header className="w-full bg-white shadow-md py-4 mb-8">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
@@ -157,7 +156,7 @@ export default function ReceivePix() {
             </header>
 
             {/* Camada branca com o conteúdo centralizado */}
-            <div className="flex flex-grow justify-center items-center bg-neutral-100">
+            <div className="flex flex-grow justify-center items-center bg-blue-100">
                 <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg flex flex-col items-center gap-6">
                     <h2 className="text-2xl font-semibold text-blue-900 mb-4">Receber Pix</h2>
                     <p className="text-lg text-gray-600 mb-6">Saldo disponível: R$ {balance.toFixed(2)}</p>
@@ -176,15 +175,7 @@ export default function ReceivePix() {
                             ))}
                         </select>
 
-                        {/* Exibe os dados do usuário apenas quando uma chave Pix é selecionada */}
-                        {selectedPixKey && (
-                            <div className="w-full">
-                                <p className="text-sm font-medium text-gray-700">Dados de cadastro:</p>
-                                <p className="text-sm text-gray-600">CPF: {clientInfo.cpf}</p>
-                                <p className="text-sm text-gray-600">E-mail: {clientInfo.email}</p>
-                                <p className="text-sm text-gray-600">Telefone: {clientInfo.telefone}</p>
-                            </div>
-                        )}
+                        
 
                         <input
                             type="number"
