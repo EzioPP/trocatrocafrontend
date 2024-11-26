@@ -38,7 +38,7 @@ async function getClient(): Promise<ClientProps> {
     if (!clientData) {
         throw new Error('Cliente não encontrado');
     }
-    clientData._balance = parseFloat(clientData._balance).toFixed(2);
+    clientData._balance = parseFloat(clientData._balance);
     return clientData as ClientProps;
 }
 

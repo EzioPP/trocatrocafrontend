@@ -1,204 +1,327 @@
-'use client';
-import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+'use client'; 
+import { useState, useEffect } from "react";
 
-import documentIcon from "@public/icons/document.svg";
-import cardIcon from "@public/icons/card.svg";
-import renan from "@public/renan.jpg";
-import CardView from "./components/CardView";
-import AddCardView from "./components/AddCardView";
-import AddPixKeyView from "./components/AddPixKeyView";
-import AddtTransactionView from "./components/AddTransactionView";
-
-import { CardProps, TransactionProps, roboto, playfair, PixProps, ClientProps } from "./local-constants";
-
-// Função para buscar dados de um endpoint
-const fetchData = async (endpoint: string): Promise<any> => {
-    try {
-        const response = await fetch(endpoint, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-        });
-
-        if (!response.ok) {
-            console.error(`Erro na resposta do servidor: ${response.status} - ${response.statusText}`);
-            throw new Error(`Falha ao obter dados do endpoint: ${endpoint}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error(`Erro ao tentar buscar do endpoint ${endpoint}:`, error.message || error);
-        throw error;
-    }
-};
-
-async function getCards(): Promise<CardProps[]> {
-    const cards = await fetchData('http://localhost:5015/api/card/client');
-    console.log("Cards fetched:", cards);
-    return cards;
+interface PixKey {
+    id: string;
+    keyType: string;
+    keyValue: string;
+    ownerName: string;
 }
 
-async function getTransactions(): Promise<TransactionProps[]> {
-    const transactions = await fetchData('http://localhost:5015/api/transaction/client');
-    console.log("Transactions fetched:", transactions);
-    return transactions;
+interface Card {
+    id: string;
+    cardNumber: string;
+    cardHolder: string;
+    expiryDate: string;
+    cvv: string;
+}
+
+interface ClientProps {
+    _balance: string;
+    cpf: string;
+    email: string;
+    telefone: string;
 }
 
 async function getClient(): Promise<ClientProps> {
-    const clientData = await fetchData('http://localhost:5015/api/client/client');
-    console.log("Client data fetched:", clientData);
-    if (!clientData) {
-        throw new Error('Cliente não encontrado');
-    }
-    clientData._balance = parseFloat(clientData._balance).toFixed(2);
-    return clientData as ClientProps;
-}
-
-async function getPix(): Promise<PixProps[]> {
-    const pixData = await fetchData('http://localhost:5015/api/pix/client');
-    console.log("Pix data fetched:", pixData);
-    return pixData;
-}
-
-async function logout() {
-    const response = await fetch('http://localhost:5015/api/user/logout', {
-        method: 'POST',
+    const response = await fetch('http://localhost:5015/api/client/client', {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
     });
     if (response.ok) {
-        window.location.href = "/login";
+        const client = await response.json();
+        client._balance = parseFloat(client._balance).toFixed(2);
+        return client;
     } else {
-        throw new Error('Falha ao sair');
+        throw new Error('Failed to fetch client');
     }
 }
 
-export default function Dashboard() {
-    const [showComponent, setShowComponent] = useState<string | null>("none");
-    const [transactions, setTransactions] = useState<TransactionProps[]>([]);
-    const [cards, setCards] = useState<CardProps[]>([]);
-    const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
-    const [client, setClient] = useState<ClientProps | null>(null);
-    const [pix, setPix] = useState<PixProps[]>([]);
-    const [error, setError] = useState<string | null>(null); // Adicionado para capturar erros
+async function getPix(): Promise<PixKey[]> {
+    const response = await fetch('http://localhost:5015/api/pix/client', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    if (response.ok) {
+        const pixs = await response.json();
+        return pixs;
+    } else {
+        throw new Error('Failed to fetch Pix keys');
+    }
+}
 
-    const sendShowComponent = useCallback((show: string) => {
-        setShowComponent(show);
-    }, []);
+async function getCards(): Promise<Card[]> {
+    const response = await fetch('http://localhost:5015/api/card/client', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    if (response.ok) {
+        const cards = await response.json();
+        return cards;
+    } else {
+        throw new Error('Failed to fetch cards');
+    }
+}
+
+async function addPixKey(pixKey: string, clientId: string): Promise<string> {
+    const response = await fetch('http://localhost:5015/api/pix/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ pixKey, clientId }),
+    });
+
+    if (response.ok) {
+        return "Chave Pix adicionada com sucesso!";
+    } else {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao adicionar chave Pix.");
+    }
+}
+
+async function addCard(cardNumber: string, cardHolder: string, expiryDate: string, cvv: string, clientId: string): Promise<string> {
+    const response = await fetch('http://localhost:5015/api/card/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ cardNumber, cardHolder, expiryDate, cvv, clientId }),
+    });
+
+    if (response.ok) {
+        return "Cartão adicionado com sucesso!";
+    } else {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao adicionar cartão.");
+    }
+}
+
+export default function Deposit() {
+    const [balance, setBalance] = useState<number>(0);
+    const [amount, setAmount] = useState<string>(""); 
+    const [pixKeys, setPixKeys] = useState<PixKey[]>([]);
+    const [cards, setCards] = useState<Card[]>([]);
+    const [selectedPixKey, setSelectedPixKey] = useState<string>("");
+    const [selectedCard, setSelectedCard] = useState<string>("");
+    const [message, setMessage] = useState<string>("");
+    const [newPixKey, setNewPixKey] = useState<string>("");
+    const [newCard, setNewCard] = useState<{ cardNumber: string, cardHolder: string, expiryDate: string, cvv: string }>({
+        cardNumber: '',
+        cardHolder: '',
+        expiryDate: '',
+        cvv: '',
+    });
+
+    const [clientInfo, setClientInfo] = useState<ClientProps>({ _balance: "0", cpf: "", email: "", telefone: "" });
 
     useEffect(() => {
-        async function fetchAllData() {
+        async function fetchData() {
             try {
-                const clientCards = await getCards();
-                const clientTransactions = await getTransactions();
-                const clientData = await getClient();
-                const clientPix = await getPix();
+                const client = await getClient();
+                setBalance(parseFloat(client._balance));
+                setClientInfo(client);
 
-                setTransactions(clientTransactions);
-                setCards(clientCards);
-                setClient(clientData);
-                setPix(clientPix);
+                const keys = await getPix();
+                setPixKeys(keys);
 
-                // Debugging: Verificar se os dados foram setados corretamente
-                console.log("Transactions:", clientTransactions);
-                console.log("Cards:", clientCards);
-                console.log("Client:", clientData);
-                console.log("Pix:", clientPix);
+                const cardsList = await getCards();
+                setCards(cardsList);
             } catch (error) {
-                console.error("Erro ao carregar dados:", error.message || error);
-                setError("Falha ao carregar os dados.");
+                console.error(error);
+                setMessage("Erro ao carregar dados");
             }
         }
 
-        fetchAllData();
+        fetchData();
     }, []);
 
-    // Se houve erro ao carregar os dados, mostra uma mensagem de erro
-    if (error) {
-        return <div>{error}</div>;
-    }
+    const handleDeposit = async () => {
+        try {
+            const depositAmount = parseFloat(amount);
 
-    // Se os dados ainda não foram carregados, mostra a mensagem de carregamento
-    if (!client || cards.length === 0 || pix.length === 0) {
-        return <div>Carregando dados...</div>;
-    }
+            if (isNaN(depositAmount) || depositAmount <= 0) {
+                setMessage("Digite um valor válido para o depósito.");
+                return;
+            }
+
+            let responseMessage = "";
+
+            if (selectedPixKey) {
+                responseMessage = await depositPix(depositAmount, selectedPixKey);
+            } else if (selectedCard) {
+                responseMessage = await depositCard(depositAmount, selectedCard);
+            } else {
+                setMessage("Selecione uma chave Pix ou um cartão para o depósito.");
+                return;
+            }
+
+            setBalance((prevBalance) => prevBalance + depositAmount);
+            setMessage(responseMessage);
+            setAmount(""); // Limpar o campo de valor
+        } catch (error: any) {
+            setMessage(error.message || "Erro ao processar o depósito.");
+        }
+    };
+
+    const handleAddPixKey = async () => {
+        try {
+            const responseMessage = await addPixKey(newPixKey, clientInfo.cpf);
+            setMessage(responseMessage);
+            setPixKeys([...pixKeys, { id: Date.now().toString(), keyType: 'CPF', keyValue: newPixKey, ownerName: clientInfo.email }]);
+            setNewPixKey(""); // Limpar o campo de chave Pix
+        } catch (error: any) {
+            setMessage(error.message || "Erro ao adicionar chave Pix.");
+        }
+    };
+
+    const handleAddCard = async () => {
+        try {
+            const responseMessage = await addCard(newCard.cardNumber, newCard.cardHolder, newCard.expiryDate, newCard.cvv, clientInfo.cpf);
+            setMessage(responseMessage);
+            setCards([...cards, {
+                id: Date.now().toString(),
+                cardNumber: newCard.cardNumber,
+                cardHolder: newCard.cardHolder,
+                expiryDate: newCard.expiryDate,
+                cvv: newCard.cvv
+            }]);
+            setNewCard({ cardNumber: '', cardHolder: '', expiryDate: '', cvv: '' }); // Limpar os campos de cartão
+        } catch (error: any) {
+            setMessage(error.message || "Erro ao adicionar cartão.");
+        }
+    };
 
     return (
-        <div className={`min-h-screen flex flex-col items-center ${roboto.className} bg-gray-100`}>
-            <header className="w-full bg-blue-900 text-white py-4 shadow-lg">
-                <h1 className="text-center text-3xl font-playfair">Troca Troca Transações</h1>
-            </header>
-            <div className="container max-w-6xl mx-auto p-6">
-                <div className="flex flex-wrap justify-between items-center mb-8">
-                    <div className="flex items-center space-x-4">
-                        <Image
-                            src={renan}
-                            alt="Avatar"
-                            width={80}
-                            height={80}
-                            className="rounded-full"
-                        />
-                        <div>
-                            <p className="text-xl font-semibold text-black">{client?._name}</p>
-                            <p className="text-sm text-black">{client?._email}</p>
-                        </div>
+        <div className="min-h-screen bg-neutral-100 flex flex-col">
+            {/* Cabeçalho */}
+            <header className="w-full bg-white shadow-md py-4 mb-8">
+                <div className="max-w-4xl mx-auto flex justify-between items-center">
+                    <div className="flex items-center space-x-6">
+                        <h1 className="text-3xl font-bold text-blue-900">Troca Troca Transações</h1>
                     </div>
-                    <button
-                        className="px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700"
-                        onClick={logout}
-                    >
-                        Sair
-                    </button>
+                    <div className="text-gray-600 text-base">
+                        <p>Bem-vindo(a)</p>
+                        <p className="font-medium">Acesse suas opções abaixo</p>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white rounded shadow p-6">
-                        <h2 className="text-lg font-semibold text-blue-900 mb-4">Saldo</h2>
-                        <p className="text-2xl font-bold text-green-500">${client?._balance}</p>
-                        <button
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
-                            onClick={() => setShowComponent("addTransaction")}
+            </header>
+
+            {/* Formulário de depósito */}
+            <div className="flex flex-grow justify-center items-center bg-neutral-100">
+                <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg flex flex-col items-center gap-6">
+                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">Depositar</h2>
+                    <p className="text-lg text-gray-600 mb-6">Saldo disponível: R$ {balance.toFixed(2)}</p>
+
+                    <div className="flex flex-col items-center w-full">
+                        <label className="text-sm font-medium text-gray-700 mb-2">Selecione a chave Pix:</label>
+                        <select
+                            value={selectedPixKey}
+                            onChange={(e) => setSelectedPixKey(e.target.value)}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
                         >
-                            Realizar Transação
-                        </button>
-                    </div>
-                    <div className="bg-white rounded shadow p-6">
-                        <h2 className="text-lg font-semibold text-blue-900 mb-4">Chaves PIX</h2>
-                        <button
-                            className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
-                            onClick={() => setShowComponent("addPix")}
-                        >
-                            Adicionar Pix
-                        </button>
-                        <ul className="mt-4 space-y-2">
-                            {pix.map((pixItem, index) => (
-                                <li key={index} className="bg-gray-100 p-2 rounded shadow">
-                                    <p className="text-sm font-medium text-black">{pixItem._keyType}</p>
-                                    <p className="text-xs text-black">{pixItem._keyValue}</p>
-                                </li>
+                            {pixKeys.map((key) => (
+                                <option key={key.id} value={key.id}>
+                                    {key.keyType}: {key.keyValue} - Proprietário: {key.ownerName}
+                                </option>
                             ))}
-                        </ul>
-                    </div>
-                    <div className="bg-white rounded shadow p-6">
-                        <h2 className="text-lg font-semibold text-blue-900 mb-4">Cartões</h2>
-                        <p className="text-2xl">{cards.length} Cartões</p>
+                        </select>
+
+                        <label className="text-sm font-medium text-gray-700 mb-2">Ou selecione um cartão:</label>
+                        <select
+                            value={selectedCard}
+                            onChange={(e) => setSelectedCard(e.target.value)}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        >
+                            {cards.map((card) => (
+                                <option key={card.id} value={card.id}>
+                                    {card.cardHolder} - {card.cardNumber}
+                                </option>
+                            ))}
+                        </select>
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            placeholder="Digite o valor do depósito"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72 text-center"
+                        />
                         <button
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
-                            onClick={() => setShowComponent("addCard")}
+                            onClick={handleDeposit}
+                            className="px-8 py-3 bg-green-700 text-white rounded-md shadow-md hover:bg-green-600 transition duration-300 w-full text-lg font-semibold"
+                        >
+                            Depositar
+                        </button>
+                    </div>
+
+                    {/* Adicionar Chave Pix */}
+                    <div className="mt-8 w-full text-center">
+                        <input
+                            type="text"
+                            value={newPixKey}
+                            onChange={(e) => setNewPixKey(e.target.value)}
+                            placeholder="Digite sua chave Pix"
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        />
+                        <button
+                            onClick={handleAddPixKey}
+                            className="px-8 py-3 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-500 transition duration-300 w-full text-lg font-semibold"
+                        >
+                            Adicionar Chave Pix
+                        </button>
+                    </div>
+
+                    {/* Adicionar Cartão */}
+                    <div className="mt-8 w-full text-center">
+                        <input
+                            type="text"
+                            placeholder="Número do Cartão"
+                            value={newCard.cardNumber}
+                            onChange={(e) => setNewCard({ ...newCard, cardNumber: e.target.value })}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Nome no Cartão"
+                            value={newCard.cardHolder}
+                            onChange={(e) => setNewCard({ ...newCard, cardHolder: e.target.value })}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Data de Validade (MM/AAAA)"
+                            value={newCard.expiryDate}
+                            onChange={(e) => setNewCard({ ...newCard, expiryDate: e.target.value })}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        />
+                        <input
+                            type="text"
+                            placeholder="CVV"
+                            value={newCard.cvv}
+                            onChange={(e) => setNewCard({ ...newCard, cvv: e.target.value })}
+                            className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 w-72"
+                        />
+                        <button
+                            onClick={handleAddCard}
+                            className="px-8 py-3 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-500 transition duration-300 w-full text-lg font-semibold"
                         >
                             Adicionar Cartão
                         </button>
-                        <ul className="mt-4 space-y-2">
-                            {cards.map((card, index) => (
-                                <li key={index} className="bg-black-100 p-2 rounded shadow">
-                                    <p className="text-sm text-black">{card._cardNumber.replace(/\d(?=\d{4})/g, "*")}</p>
-                                    <p className="text-xs text-black">{card._expirationDate}</p>
-                                </li>
-                            ))}
-                        </ul>
                     </div>
+
+                    {message && <p className="mt-6 text-lg text-gray-700 text-center">{message}</p>}
                 </div>
             </div>
+
+            {/* Logo no canto inferior direito */}
+            <img
+                src="/logo2.svg"
+                alt="Logo"
+                className="w-64 h-64 fixed bottom-6 right-6 object-contain"
+            />
         </div>
     );
 }

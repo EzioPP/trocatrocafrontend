@@ -32,7 +32,7 @@ const Page = () => {
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md flex flex-col items-center gap-6">
           <Link href="/dashboard/receber">
             <button className="px-8 py-4 bg-green-700 text-white rounded-md shadow-md hover:bg-green-600 transition duration-300 w-full text-xl font-semibold">
-              Receber
+              retirar
             </button>
           </Link>
           <Link href="/dashboard/depositar">

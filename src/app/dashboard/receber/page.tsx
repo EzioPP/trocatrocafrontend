@@ -1,52 +1,60 @@
-'use client';
+'use client'; 
 import { useState, useEffect } from "react";
 
 interface PixKey {
     id: string;
     keyType: string;
     keyValue: string;
+    ownerName: string;
 }
 
-async function getClient(): Promise<{ _balance: string; cpf: string; email: string; telefone: string }> {
+interface ClientProps {
+    _balance: string;
+    cpf: string;
+    email: string;
+    telefone: string;
+}
+
+async function getClient(): Promise<ClientProps> {
     const response = await fetch('http://localhost:5015/api/client/client', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
     });
-
-    // Verifique a resposta antes de parsear
-    const textResponse = await response.text(); // Lê a resposta como texto
-
-    // Imprime a resposta no console para depuração
-    console.log('Resposta bruta:', textResponse);
-
-    try {
-        const client = JSON.parse(textResponse); // Tenta fazer o parse manualmente
+    if (response.ok) {
+        const client = await response.json();
         client._balance = parseFloat(client._balance).toFixed(2);
         return client;
-    } catch (error) {
-        throw new Error('Erro ao analisar a resposta da API. ' + error.message);
+    } else {
+        throw new Error('Failed to fetch client');
     }
 }
 
-async function getPixKeys(): Promise<PixKey[]> {
+async function getPix(): Promise<PixKey[]> {
     const response = await fetch('http://localhost:5015/api/pix/client', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
     });
+    if (response.ok) {
+        const pixs = await response.json();
+        return pixs;
+    } else {
+        throw new Error('Failed to fetch Pix keys');
+    }
+}
 
-    // Verifique a resposta antes de parsear
-    const textResponse = await response.text(); // Lê a resposta como texto
-
-    // Imprime a resposta no console para depuração
-    console.log('Resposta das chaves Pix:', textResponse);
-
-    try {
-        const pixKeys = JSON.parse(textResponse); // Tenta fazer o parse manualmente
-        return pixKeys;
-    } catch (error) {
-        throw new Error('Erro ao analisar as chaves Pix. ' + error.message);
+async function getTransactions(): Promise<TransactionProps[]> {
+    const response = await fetch('http://localhost:5015/api/transaction/client', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    if (response.ok) {
+        const transactions = await response.json();
+        return transactions;
+    } else {
+        throw new Error('Failed to fetch transactions');
     }
 }
 
@@ -72,7 +80,8 @@ export default function ReceivePix() {
     const [pixKeys, setPixKeys] = useState<PixKey[]>([]);
     const [selectedPixKey, setSelectedPixKey] = useState<string>("");
     const [message, setMessage] = useState<string>("");
-    const [clientInfo, setClientInfo] = useState<{ cpf: string, email: string, telefone: string }>({
+    const [clientInfo, setClientInfo] = useState<ClientProps>({
+        _balance: '0',
         cpf: '',
         email: '',
         telefone: '',
@@ -83,18 +92,16 @@ export default function ReceivePix() {
             try {
                 const client = await getClient();
                 setBalance(parseFloat(client._balance));
-                setClientInfo({
-                    cpf: client.cpf,
-                    email: client.email,
-                    telefone: client.telefone
-                });
+                setClientInfo(client);
 
-                const keys = await getPixKeys();
+                const keys = await getPix();
                 setPixKeys(keys);
-
                 if (keys.length > 0) {
-                    setSelectedPixKey(keys[0].id); // Selecionar a primeira chave por padrão
+                    setSelectedPixKey(keys[0].id); // Seleciona a primeira chave por padrão
                 }
+
+                const transactionData = await getTransactions();
+                // Aqui podemos processar ou exibir as transações se necessário
             } catch (error) {
                 console.error(error);
                 setMessage("Erro ao carregar dados");
@@ -107,7 +114,6 @@ export default function ReceivePix() {
     const handleReceivePix = async () => {
         try {
             const pixAmount = parseFloat(amount);
-
             if (isNaN(pixAmount) || pixAmount <= 0) {
                 setMessage("Digite um valor válido para o Pix.");
                 return;
@@ -133,7 +139,8 @@ export default function ReceivePix() {
     };
 
     return (
-        <div className="min-h-screen bg-neutral-100 flex flex-col">
+       
+       <div className="min-h-screen bg-neutral-100 flex flex-col">
             {/* Cabeçalho */}
             <header className="w-full bg-white shadow-md py-4 mb-8">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
@@ -164,17 +171,20 @@ export default function ReceivePix() {
                         >
                             {pixKeys.map((key) => (
                                 <option key={key.id} value={key.id}>
-                                    {key.keyType}: {key.keyValue}
+                                    {key.keyType}: {key.keyValue} - Proprietário: {key.ownerName}
                                 </option>
                             ))}
                         </select>
 
-                        <div className="w-full">
-                            <p className="text-sm font-medium text-gray-700">Dados de cadastro:</p>
-                            <p className="text-sm text-gray-600">CPF: {clientInfo.cpf}</p>
-                            <p className="text-sm text-gray-600">E-mail: {clientInfo.email}</p>
-                            <p className="text-sm text-gray-600">Telefone: {clientInfo.telefone}</p>
-                        </div>
+                        {/* Exibe os dados do usuário apenas quando uma chave Pix é selecionada */}
+                        {selectedPixKey && (
+                            <div className="w-full">
+                                <p className="text-sm font-medium text-gray-700">Dados de cadastro:</p>
+                                <p className="text-sm text-gray-600">CPF: {clientInfo.cpf}</p>
+                                <p className="text-sm text-gray-600">E-mail: {clientInfo.email}</p>
+                                <p className="text-sm text-gray-600">Telefone: {clientInfo.telefone}</p>
+                            </div>
+                        )}
 
                         <input
                             type="number"
