@@ -28,7 +28,7 @@ const CurrencyInput = ({ name, className, required }: CurrencyInputProps) => {
         <input
             name={name}
             type="text"
-            className={className}
+            className="bg-dark text-white p-2 rounded-md"
             value={value}
             onInput={handleInputChange}
             placeholder="R$ 0,00"

@@ -407,7 +407,7 @@ export default function AddtTransactionView({ sendShowComponent }: TrasactionVie
                         className="bg-accent hover:bg-lightAccent text-dark font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                         type="submit"
                     >
-                        Cadastrar
+                        Realizar
                     </button>
                     <button
                         className="bg-rose-800 hover:bg-rose-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
