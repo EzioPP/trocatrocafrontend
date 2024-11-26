@@ -34,8 +34,7 @@ const ImageDisplay = () => {
             }
         };
     }, []);
-
-    if (!imageSrc) return <p>Loading image...</p>;
+    if (!imageSrc) return <p style={{ color: 'red' }}>TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA TROCA</p>;
 
     return <img src={imageSrc} alt="PFP" />;
 };

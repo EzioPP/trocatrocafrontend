@@ -62,7 +62,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-            <label htmlFor="username" className="block text-lg font-medium text-black">
+              <label htmlFor="username" className="block text-lg font-medium text-black">
                 Usuário
               </label>
               <input
@@ -76,7 +76,7 @@ export default function Login() {
             </div>
 
             <div>
-            <label htmlFor="username" className="block text-lg font-medium text-black">
+              <label htmlFor="username" className="block text-lg font-medium text-black">
                 Senha
               </label>
               <input
@@ -85,7 +85,7 @@ export default function Login() {
                 type="password"
                 required
                 autoComplete="current-password"
-               className="mt-1 block w-full border-black-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black"
+                className="mt-1 block w-full border-black-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-black"
               />
             </div>
 
@@ -95,12 +95,6 @@ export default function Login() {
                 className="text-sm text-blue-500 hover:underline"
               >
                 Não tem uma conta? Registre-se
-              </a>
-              <a
-                href="/forgot-password"
-                className="text-sm text-blue-500 hover:underline"
-              >
-                Esqueceu a senha?
               </a>
             </div>
 

@@ -14,7 +14,8 @@ import AddImageView from "./components/AddImageView";
 import ImageDisplay from "./components/ImageComponent";
 
 
-import { CardProps, TransactionProps, roboto, playfair, PixProps, ClientProps } from "./local-constants";
+import { CardProps, TransactionProps, roboto, playfair, PixProps, ClientProps, ReportProps } from "./local-constants";
+import AddReportView from "./components/AddReportView";
 
 async function getTransactions(): Promise<TransactionProps[]> {
     const response = await fetch('http://localhost:5015/api/transaction/client', {
@@ -31,6 +32,32 @@ async function getTransactions(): Promise<TransactionProps[]> {
     }
 }
 
+const downloadReport = async (report: ReportProps) => {
+    const response = await fetch(`http://localhost:5015/api/report/file/${report?._reportId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    if (response.ok) {
+        const json = await response.json(); // Assuming backend sends JSON
+        const { _title, _image } = json;
+
+        // Convert the Buffer data back to a Blob
+        const uint8Array = new Uint8Array(_image.data); // `_image.data` holds the byte array
+        const blob = new Blob([uint8Array], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = _title || 'file.xlsx'; // Use title or fallback
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(link.href);
+    }
+}
+
+
 async function getCards(): Promise<CardProps[]> {
     const response = await fetch('http://localhost:5015/api/card/client', {
         method: 'GET',
@@ -46,6 +73,21 @@ async function getCards(): Promise<CardProps[]> {
     }
 }
 
+
+async function getReports(): Promise<ReportProps[]> {
+    const response = await fetch('http://localhost:5015/api/report/client', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    });
+    console.log(response);
+    if (response.ok) {
+        const reports = await response.json();
+        return reports;
+    } else {
+        throw new Error('Failed to fetch reports');
+    }
+}
 
 async function getClient(): Promise<ClientProps> {
     const response = await fetch('http://localhost:5015/api/client/client', {
@@ -118,9 +160,10 @@ export default function Dashboard() {
     const [transactions, setTransactions] = useState<TransactionProps[]>([]);
     const [cards, setCards] = useState<CardProps[]>([]);
     const [selectedCard, setSelectedCard] = useState<CardProps | null>(null);
+    const [selectedReport, setSelectedReport] = useState<ReportProps | null>(null);
     const [client, setClient] = useState<ClientProps | null>(null);
     const [pix, setPix] = useState<PixProps[]>([]);
-    const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [reports, setReporst] = useState<ReportProps[]>([]);
 
 
     const sendShowComponent = useCallback((show: string) => {
@@ -137,10 +180,12 @@ export default function Dashboard() {
                 const clientTransactions = await getTransactions();
                 const client = await getClient();
                 const clientPix = await getPix();
+                const clientReports = await getReports();
                 setTransactions(clientTransactions);
                 setCards(clientCards);
                 setClient(client);
                 setPix(clientPix);
+                setReporst(clientReports);
             } catch (error) {
                 console.error(error);
             }
@@ -157,6 +202,7 @@ export default function Dashboard() {
             {showComponent === "addPix" && <AddPixKeyView sendShowComponent={sendShowComponent} />}
             {showComponent === "addTransaction" && <AddtTransactionView sendShowComponent={sendShowComponent} />}
             {showComponent === "addImage" && <AddImageView sendShowComponent={sendShowComponent} />}
+            {showComponent === "addReport" && <AddReportView sendShowComponent={sendShowComponent} />}
             <div className="flex items-center justify-center py-8">
                 <h1 className="text-3xl font-playfair text-accent"> Troca Troca Transações </h1>
             </div>
@@ -239,47 +285,87 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
-            <div className="transactions p-6 rounded-lg shadow-lg w-full max-w-4xl flex flex-col items-center">
-                <div className="transactions_info text-center mb-4">
-                    <h2 className="text-3xl font-semibold mb-2">Transações</h2>
-                </div>
-                <div className="transactions_list w-full flex justify-center">
-                    <ul className="space-y-4 w-full max-w-4xl">
-                        {transactions
-                            .sort((a, b) => new Date(b._transactionDate).getTime() - new Date(a._transactionDate).getTime())
-                            .map((transaction, index) => (
+            <div className="info text-center mb-8 w-full max-w-4xl flex justify-between">
+                <div className="reports p-6 rounded-lg shadow-lg w-1/2 flex flex-col items-center mr-4">
+                    <div className="reports_info text-center mb-4">
+                        <h2 className="text-3xl font-semibold mb-2">Relatórios</h2>
+                        <p className="text-sm text-gray-500">Relatórios de transações</p>
+                        <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => { setShowComponent("addReport") }}>Gerar Relatório</button>
+                        <ul className="reports_list w-full max-w-4xl">
+                            {reports.map((report, index) => (
                                 <li
                                     key={index}
-                                    className="transaction_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between"
+                                    className="report_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between"
                                 >
-                                    <div className="transaction_info flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                                    <div className="report_info flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                                         <div className="flex space-x-4">
-                                            <p className="date text-sm text-gray-500">{transaction._transactionDate.replace("T", " ")
-                                                .replace(/\.\d+Z$/, "")
-                                                .replace(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/, "$3/$2/$1 $4:$5")}</p>
-
-                                            <p className={`text-lg font-semibold ${transaction._value > 0 ? "text-green-500" : "text-red-800"}`}>R$ {transaction._value}</p>
-                                        </div>
-                                        <div className="flex space-x-4">
-                                            <p className="type text-sm text-gray-500">{transaction._type}</p>
-                                            <p
-                                                className={`status text-sm ${transaction._status === "Aprovado"
-                                                    ? "text-green-500"
-                                                    : transaction._status === "Recusado"
-                                                        ? "text-red-500"
-                                                        : "text-yellow-500"
-                                                    }`}
-                                            >
-                                                {transaction._status}
-                                            </p>
+                                            <p className="date text-sm text-gray-500">{report._reportDate.toString()}</p>
+                                            <a href="#" onClick={() => {
+                                                downloadReport(report);
+                                            }
+                                            }>
+                                                <Image
+                                                    priority
+                                                    src={documentIcon}
+                                                    alt="Document icon"
+                                                    width={36}
+                                                    height={36}
+                                                />
+                                            </a>
                                         </div>
                                     </div>
                                 </li>
                             ))}
-                    </ul>
+                        </ul>
+
+                    </div>
+                </div>
+                <div className="transactions p-6 rounded-lg shadow-lg w-1/2 flex flex-col items-center ml-4">
+                    <div className="transactions_info text-center mb-4">
+                        <h2 className="text-3xl font-semibold mb-2">Transações</h2>
+                        <p className="text-sm text-gray-500">Últimas transações realizadas</p>
+                        <div className="transactions_list w-full flex justify-center">
+                            <ul className="space-y-4 w-full max-w-4xl">
+                                {transactions
+                                    .sort((a, b) => new Date(b._transactionDate).getTime() - new Date(a._transactionDate).getTime())
+                                    .slice(0, 10)
+                                    .map((transaction, index) => (
+                                        <li
+                                            key={index}
+                                            className="transaction_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between"
+                                        >
+                                            <div className="transaction_info flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                                                <div className="flex space-x-4">
+                                                    <p className="date text-sm text-gray-500">{transaction._transactionDate.replace("T", " ")
+                                                        .replace(/\.\d+Z$/, "")
+                                                        .replace(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/, "$3/$2/$1 $4:$5")}</p>
+
+                                                    <p className={`text-lg font-semibold ${transaction._value > 0 ? "text-green-500" : "text-red-800"}`}>R$ {transaction._value}</p>
+                                                </div>
+                                                <div className="flex space-x-4">
+                                                    <p className="type text-sm text-gray-500">{transaction._type}</p>
+                                                    <p
+                                                        className={`status text-sm ${transaction._status === "Aprovado"
+                                                            ? "text-green-500"
+                                                            : transaction._status === "Recusado"
+                                                                ? "text-red-500"
+                                                                : "text-yellow-500"
+                                                            }`}
+                                                    >
+                                                        {transaction._status}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+
+        </div >
+
 
     );
 }
