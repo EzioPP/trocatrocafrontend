@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 
@@ -29,7 +29,7 @@ const fetchData = async (endpoint: string): Promise<any> => {
         return await response.json();
     } catch (error) {
         console.error(`Erro ao tentar buscar do endpoint ${endpoint}:`, error.message || error);
-        throw error; // Re-lança o erro para ser tratado no catch externo
+        throw error;
     }
 };
 
@@ -54,13 +54,6 @@ async function getPix(): Promise<PixProps[]> {
     return await fetchData('http://localhost:5015/api/pix/client');
 }
 
-function getPixKeys(client: ClientProps, keyType: string): string {
-    if (keyType === 'CPF') return client._cpf;
-    if (keyType === 'Telefone') return client._phone;
-    if (keyType === 'Email') return client._email;
-    return '';
-}
-
 async function logout() {
     const response = await fetch('http://localhost:5015/api/user/logout', {
         method: 'POST',
@@ -83,109 +76,102 @@ export default function Dashboard() {
     const [pix, setPix] = useState<PixProps[]>([]);
 
     const sendShowComponent = useCallback((show: string) => {
-        console.log(show);
         setShowComponent(show);
     }, []);
 
     useEffect(() => {
         async function fetchAllData() {
             try {
-                // Carregando os dados
                 const clientCards = await getCards();
                 const clientTransactions = await getTransactions();
                 const clientData = await getClient();
                 const clientPix = await getPix();
 
-                // Atualizando os estados
                 setTransactions(clientTransactions);
                 setCards(clientCards);
                 setClient(clientData);
                 setPix(clientPix);
             } catch (error) {
-                console.error("Erro ao carregar dados do cliente, cartões ou transações:", error.message || error);
+                console.error("Erro ao carregar dados:", error.message || error);
             }
         }
 
         fetchAllData();
     }, []);
 
-    // Se os dados ainda estão sendo carregados, mostre uma mensagem de loading
     if (!client || cards.length === 0 || pix.length === 0) {
         return <div>Carregando dados...</div>;
     }
 
     return (
-        <div className={`dashboard_main min-h-screen flex flex-col items-center justify-center ${roboto.className} p-6`}>
-            {showComponent === "viewCard" && <CardView sendShowComponent={sendShowComponent} card={selectedCard} />}
-            {showComponent === "addCard" && <AddCardView sendShowComponent={sendShowComponent} />}
-            {showComponent === "addPix" && <AddPixKeyView sendShowComponent={sendShowComponent} />}
-            {showComponent === "addTransaction" && <AddtTransactionView sendShowComponent={sendShowComponent} />}
-
-            <div className="flex items-center justify-center py-8">
-                <h1 className="text-3xl font-playfair text-accent">Troca Troca Transações</h1>
-            </div>
-
-            <div className="header text-center mb-8 flex items-center justify-between w-full max-w-4xl">
-                <div className="user text-center mb-8">
-                    <div className="user_info text-center mb-8">
-                        <div className="user_avatar relative w-32 h-32 rounded-full overflow-hidden">
-                            <Image
-                                src={renan}
-                                alt="Renan"
-                                layout="fill"
-                                objectFit="cover"
-                                className="rounded-full"
-                            />
-                        </div>
-                        <p className="text-lg font-semibold">{client?._name}</p>
-                        <p className="text-sm text-gray-500">{client?._email}</p>
-                        <button className="logout mt-4 px-4 py-2 bg-rose-900 text-white rounded" onClick={logout}>Sair</button>
-                    </div>
-
-                    <div className="balance_info text-center mb-8">
-                        <h2 className="text-3xl font-semibold mb-2">Saldo</h2>
-                        <p className="text-2xl font-bold text-accent">${client?._balance}</p>
-                        <div className="make_transaction text-center mb-8">
-                            <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => setShowComponent("addTransaction")}>Realizar Transação</button>
+        <div className={`min-h-screen flex flex-col items-center ${roboto.className} bg-gray-100`}>
+            <header className="w-full bg-blue-900 text-white py-4 shadow-lg">
+                <h1 className="text-center text-3xl font-playfair">Troca Troca Transações</h1>
+            </header>
+            <div className="container max-w-6xl mx-auto p-6">
+                <div className="flex flex-wrap justify-between items-center mb-8">
+                    <div className="flex items-center space-x-4">
+                        <Image
+                            src={renan}
+                            alt="Avatar"
+                            width={80}
+                            height={80}
+                            className="rounded-full"
+                        />
+                        <div>
+                            <p className="text-xl font-semibold text-black">{client?._name}</p>
+                            <p className="text-sm text-black">{client?._email}</p>
                         </div>
                     </div>
+                    <button
+                        className="px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700"
+                        onClick={logout}
+                    >
+                        Sair
+                    </button>
                 </div>
-
-                <div className="registered-pix text-center mb-8">
-                    <h2 className="text-3xl font-semibold mb-2">Chaves PIX</h2>
-                    <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => setShowComponent("addPix")}>Adicionar Pix</button>
-                    <div className="pix_list mt-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-neutral-800">
-                        <ul className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded shadow p-6">
+                        <h2 className="text-lg font-semibold text-blue-900 mb-4">Saldo</h2>
+                        <p className="text-2xl font-bold text-green-500">${client?._balance}</p>
+                        <button
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+                            onClick={() => setShowComponent("addTransaction")}
+                        >
+                            Realizar Transação
+                        </button>
+                    </div>
+                    <div className="bg-white rounded shadow p-6">
+                        <h2 className="text-lg font-semibold text-blue-900 mb-4">Chaves PIX</h2>
+                        <button
+                            className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+                            onClick={() => setShowComponent("addPix")}
+                        >
+                            Adicionar Pix
+                        </button>
+                        <ul className="mt-4 space-y-2">
                             {pix.map((pixItem, index) => (
-                                <li key={index} className="pix_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between">
-                                    <div className="pix_info">
-                                        <p className="text-lg font-semibold">{pixItem._keyType}</p>
-                                        <p className="text-sm text-gray-500">{getPixKeys(client, pixItem._keyType)}</p>
-                                    </div>
+                                <li key={index} className="bg-gray-100 p-2 rounded shadow">
+                                    <p className="text-sm font-medium text-black">{pixItem._keyType}</p>
+                                    <p className="text-xs text-black">{pixItem._keyValue}</p>
                                 </li>
                             ))}
                         </ul>
                     </div>
-                </div>
-
-                <div className="cards_info text-center mb-8">
-                    <h2 className="text-3xl font-semibold mb-2">Cartões</h2>
-                    <p className="text-2xl font-bold text-accent">{cards.length}</p>
-                    <button className="mt-4 px-4 py-2 bg-accent text-white rounded" onClick={() => setShowComponent("addCard")}>Adicionar Cartão</button>
-
-                    <div className="cards_list mt-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-neutral-800">
-                        <ul className="space-y-4">
+                    <div className="bg-white rounded shadow p-6">
+                        <h2 className="text-lg font-semibold text-blue-900 mb-4">Cartões</h2>
+                        <p className="text-2xl">{cards.length} Cartões</p>
+                        <button
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+                            onClick={() => setShowComponent("addCard")}
+                        >
+                            Adicionar Cartão
+                        </button>
+                        <ul className="mt-4 space-y-2">
                             {cards.map((card, index) => (
-                                <li key={index} className="card_item bg-neutral-700 rounded-lg shadow-md p-4 flex items-center justify-between">
-                                    <div className="card_info">
-                                        <p className="text-lg font-semibold">{card._cardNumber.replace(/\d(?=\d{4})/g, "*")}</p>
-                                        <p className="text-sm text-gray-500">{card._expirationDate.split("T")[0]}</p>
-                                    </div>
-                                    <div className="card_icon">
-                                        <a href="#" onClick={() => { setSelectedCard(card); setShowComponent("viewCard") }}>
-                                            <Image priority src={cardIcon} alt="Card icon" width={36} height={36} />
-                                        </a>
-                                    </div>
+                                <li key={index} className="bg-black-100 p-2 rounded shadow">
+                                    <p className="text-sm text-black">{card._cardNumber.replace(/\d(?=\d{4})/g, "*")}</p>
+                                    <p className="text-xs text-black">{card._expirationDate}</p>
                                 </li>
                             ))}
                         </ul>

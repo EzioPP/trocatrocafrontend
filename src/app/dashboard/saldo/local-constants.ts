@@ -9,6 +9,7 @@ const playfair = Playfair_Display({
     weight: ['700'],
 });
 type TransactionProps = {
+    _amount: any;
     _transactionId: number;
     _transactionDate: string;
     _value: number;
